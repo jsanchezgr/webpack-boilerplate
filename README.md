@@ -1,2 +1,2 @@
-# weback-boilerplate
+# webpack-boilerplate
 Just a quickstart webpack boilerplate with scss support
