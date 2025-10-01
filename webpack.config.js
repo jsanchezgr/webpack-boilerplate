@@ -28,16 +28,13 @@ module.exports = {
                 test: /\.html$/,
                 use: [
                     {
-                        loader: "html-loader",
-                        options: { minimize: true }
+                        loader: "html-loader"
                     }
                 ]
             },
             {
                 test: /\.(png|svg|jpg|gif)$/,
-                use: [
-                    'file-loader'
-                ]
+                type: 'asset/resource'
             }
         ]
     },
