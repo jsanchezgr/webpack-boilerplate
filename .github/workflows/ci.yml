@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  test:
+    name: Tests (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [12.x, 14.x]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Detect test script
+        id: meta
+        run: |
+          node -e "const s=require('./package.json').scripts||{}; const hasTest=!!s.test && !/^echo\s+\"?Error: no test specified/.test(s.test); console.log(`has_test=${hasTest}`);" >> $GITHUB_OUTPUT
+
+      - name: Run tests
+        if: steps.meta.outputs.has_test == 'true'
+        run: npm test
+
+      - name: Skip tests (no test script)
+        if: steps.meta.outputs.has_test != 'true'
+        run: echo "No test script found in package.json; skipping tests."
+
+  build:
+    name: Build (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+    needs: test
+    if: ${{ needs.test.result == 'success' }}
+    strategy:
+      matrix:
+        node-version: [12.x, 14.x]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '14.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Detect lint script
+        id: meta
+        run: |
+          node -e "const s=require('./package.json').scripts||{}; const hasLint=!!s.lint; console.log(`has_lint=${hasLint}`);" >> $GITHUB_OUTPUT
+
+      - name: Run lint
+        if: steps.meta.outputs.has_lint == 'true'
+        run: npm run lint
+
+      - name: Skip lint (no lint script)
+        if: steps.meta.outputs.has_lint != 'true'
+        run: echo "No lint script found in package.json; skipping lint."
